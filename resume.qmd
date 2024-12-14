@@ -18,7 +18,7 @@ Phone: 713-775-6080
 **Business Analytics**  
 _September 2020 - April 2025_	
 
-# Academic Profile
+# Academic Profile 
 
 **CSE 110-Programming Building Blocks**  
 September 2022 - December 2022
@@ -46,9 +46,7 @@ Learned to write programs for data retrieval, preparation, and analysis using da
 **High School Diploma**  
 _June 2020_
 
-
 ---
-
 ## Work Experience
 
 ### Dog Sitting  
