@@ -1,0 +1,184 @@
+---
+title: "Client Report - [Project 1 - Whats in a name?]"
+subtitle: "Course DS 250"
+author: "[Samantha Powell]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+_THIS `.qmd` IS INSTRUCTIONAL AND SHOULD `NOT` BE USED TO WRITE YOUR REPORTS (EXCEPTION - PROJECT 0). THERE IS ANOTHER TEMPLATE FILE FOR THAT. YOU WILL NEED TO `PREVIEW` THE REPORT TO PRODUCE A `.html` FILE. YOU WILL SUBMIT THE `.html` FILE ON CANVAS._
+
+
+
+
+
+
+```{python}
+#| label: project-data
+#| code-summary: Read and format project data
+import pandas as pd
+
+#Learn morea about Code Cells: https://quarto.org/docs/reference/cells/cells-jupyter.html
+
+# Include and execute your code here
+df = pd.read_csv("https://raw.githubusercontent.com/byuidatascience/data4python4ds/master/data-raw/mpg/mpg.csv")
+```
+
+__Highlight the Questions and Tasks__
+
+## Question1|Task 1
+
+__|TASK 1 FROM THE PROJECT HERE__ How does your name at your birth year compare to its use historically?
+
+_Add details here to answer the question but `NOT` like an assignment Q&A. You need to `write your answers as a consulting solution report`.
+
+The chart illustrates the popularity of the name "Samantha" from 1900 to 2020. The name saw little use before the 1950s, with a sharp rise in popularity starting in the late 1950s and peaking in the early 1990s. After the peak, the name's popularity gradually declined through the 2000s and 2010s. The red dashed line in the chart marks a reference year, possibly indicating the birth year.
+
+_include figures in chunks and discuss your findings in the figure._
+
+```{python}
+#| label: Q1
+#| code-summary: Read and format data
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the data
+name_data = pd.read_csv("names_year.csv")
+
+# Filtered the name and year range by my name and birth year
+name_usage = name_data[(name_data['name'] == 'Samantha') & (name_data['year'] >= 1900) & (name_data['year'] <= 2020)]
+
+# Plot the name usage over time and add reference line for birth year
+plt.plot(name_usage['year'], name_usage['Total'], color='blue')
+plt.axvline(x=2002, color='red', linestyle='dashed')
+plt.title('Name Usage Over Time')
+plt.xlabel('Year')
+plt.ylabel('Total Usage')
+plt.show()
+
+
+
+```
+
+## Question2|Task 2
+
+__|TASK 2 FROM THE PROJECT HERE__If you talked to someone named Brittany on the phone, what is your guess of their age?
+
+This chart shows the usage of the name "Brittany" over time. The name "Brittany" surged in popularity starting around the late 1970s, peaking in the late 1980s and early 1990s, before declining sharply after 2000. The two red dashed lines indicate the likely age range of someone named Brittany, suggesting they were most likely born between the late 1970s and early 2000s. Given this data, it’s reasonable to guess that someone named Brittany is likely in their 20s to early 40s. You would be less likely to guess younger or older ages, as the name was rarely used before the late 1970s and has become much less common since the early 2000s.
+
+- _include figures in chunks and discuss your findings in the figure._
+
+```{python}
+#| label: Q2-chart
+#| code-summary: plot 
+# Include and execute your code here
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the data
+name_data = pd.read_csv("names_year.csv")
+
+# Filter for the name 'Brittany' and relevant year range
+brittany_usage = name_data[(name_data['name'] == 'Brittany') & (name_data['year'] >= 1900) & (name_data['year'] <= 2020)]
+
+# Plot the name usage for 'Brittany' and mark the years you’d guess their age
+plt.plot(brittany_usage['year'], brittany_usage['Total'], color='green')
+plt.axvline(x=1980, color='red', linestyle='dashed', label='Likely age range')
+plt.axvline(x=2000, color='red', linestyle='dashed')
+plt.title("Name Usage of 'Brittany' Over Time")
+plt.xlabel('Year')
+plt.ylabel('Total Usage')
+plt.legend()
+plt.show()
+
+```
+
+## Question3|Task 3
+
+__|TASK 3 FROM THE PROJECT HERE__Compare the name usage of Mary, Martha, Peter, and Paul from 1920-2000
+
+- _PROVIDE TABLES THAT HELP ADDRESS THE QUESTIONS AND TASKS (IF APPLICABLE)._
+
+The chart displays the usage trends of the names Mary, Martha, Peter, and Paul from 1920 to 2000. The name "Mary" was by far the most popular of the four, peaking in the 1940s and then declining significantly after the 1950s. "Paul" follows next in terms of popularity, rising through the 1950s before gradually declining. "Martha" and "Peter" have similar trends, with steady usage throughout the years but at lower levels compared to Mary and Paul. All four names show a general decline in usage after the 1960s, suggesting that these traditional Christian names became less common as newer naming trends emerged. The significant drop in "Mary's" usage stands out the most, showing a sharp fall from its earlier dominance.
+
+```{python}
+#| label: Q3-table
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the data
+name_data = pd.read_csv("names_year.csv")
+#| code-summary: table example
+#| tbl-cap: "table example"
+#| tbl-cap-location: top
+# Include and execute your code here
+
+# Filter for the four names and relevant year range
+names_subset = name_data[(name_data['name'].isin(['Mary', 'Martha', 'Peter', 'Paul'])) & (name_data['year'] >= 1920) & (name_data['year'] <= 2000)]
+
+# Plot the name usage for the four names
+for name in ['Mary', 'Martha', 'Peter', 'Paul']:
+    name_usage = names_subset[names_subset['name'] == name]
+    plt.plot(name_usage['year'], name_usage['Total'], label=name)
+
+plt.title('Name Usage of Mary, Martha, Peter, and Paul (1920-2000)')
+plt.xlabel('Year')
+plt.ylabel('Total Usage')
+plt.legend()
+plt.show()
+
+```
+
+
+# Question4|Task 4 
+
+__|TASK 4 FROM THE PROJECT HERE__Plot the usage of a unique name from a famous movie
+
+The graph shows a significant increase in the usage of the name "Elliot" following the release of E.T. in 1982, indicating that the movie likely contributed to its rising popularity. After fluctuating in the 1990s, the name's usage surged again in the 2000s, reaching its highest point by 2020. This suggests that "Elliot" has continued to grow in popularity over time.
+
+```{python}
+#| label: Q4-table
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the data
+name_data = pd.read_csv("names_year.csv")
+
+# Name from the famous movie and the movie release year
+movie_name = "Elliot"
+movie_release_year = 1982  # E.T. movie release year
+
+# Filters the data for the name 'Elliot'
+movie_name_usage = name_data[(name_data['name'] == movie_name) & (name_data['year'] >= 1900) & (name_data['year'] <= 2020)]
+
+# Plot the name usage over time and add a reference line for the movie release year
+plt.plot(movie_name_usage['year'], movie_name_usage['Total'], color='purple')
+#Reference line for the release year
+plt.axvline(x=movie_release_year, color='red', linestyle='dashed', label=f'{movie_release_year} Movie Release')
+plt.title(f"Name Usage of '{movie_name}' Over Time")
+plt.xlabel('Year')
+plt.ylabel('Total Usage')
+plt.legend()
+plt.show()
+
+```

@@ -1,0 +1,239 @@
+---
+title: "Client Report - [Project 4: Can You Predict That?]"
+subtitle: "Course DS 250"
+author: "[Samantha Powell]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+## Elevator pitch: The data reveals that most homes in Denver were built before 1980, reflecting construction trends from the asbestos era. Garage type and architectural features strongly correlate with the build period, showing that attached garages and single-story designs are key indicators of homes built post-1980. Living area distributions overlap but highlight occasional outliers, offering potential for nuanced predictive modeling.
+
+```{python}
+#| label: libraries
+#| include: false
+import sqlite3
+import pandas as pd
+import numpy as np
+from lets_plot import *
+LetsPlot.setup_html(isolated_frame=True)
+
+LetsPlot.setup_html()
+#| label: project-data
+#| code-summary: Read and format project data
+
+# Learn morea about Code Cells: https://quarto.org/docs/reference/cells/cells-jupyter.html
+
+# Include and execute your code here
+df = pd.read_csv("https://raw.githubusercontent.com/byuidatascience/data4python4ds/master/data-raw/mpg/mpg.csv")
+```
+
+# |Initial test
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the dataset
+data = pd.read_csv('dwellings_ml.csv')
+
+# Quick data exploration
+print(data.info())  # Check for null values and data types
+print(data.describe())  # Summary statistics
+
+# Inspect the target variable
+print(data['before1980'].value_counts())
+
+# Plot the distribution of 'before1980'
+labels = ['After 1980', 'Before 1980']
+sizes = data['before1980'].value_counts().sort_index()
+plt.bar(labels, sizes, color=['lightblue', 'orange'])
+plt.title("Distribution of 'before1980'")
+plt.ylabel("Count")
+plt.show()
+
+```
+
+# |Task 1_part 1
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the dataset
+data = pd.read_csv('dwellings_ml.csv')
+
+# Group data by before1980
+data['yrbuilt_group'] = data['before1980'].map({1: 'Before 1980', 0: 'After 1980'})
+groups = data.groupby('yrbuilt_group')['yrbuilt']
+
+# Plot Year Built distribution by before1980
+plt.hist(groups.get_group('Before 1980'), bins=20, alpha=0.7, label='Before 1980', color='orange')
+plt.hist(groups.get_group('After 1980'), bins=20, alpha=0.7, label='After 1980', color='lightblue')
+plt.title("Histogram of Year Built")
+plt.xlabel("Year Built")
+plt.ylabel("Count")
+plt.legend()
+plt.show()
+
+
+```
+
+# This histogram shows that most homes in the dataset were built before 1980, during a period when asbestos use in construction was common. Machine Learning: The sharp distinction in the distribution between pre-1980 and post-1980 homes suggests that yrbuilt is a key variable for classification. While yrbuilt itself may not always be available, related patterns (e.g., garage type, living area) can help infer the build period.
+
+# |Task 1_part 2
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the dataset
+data = pd.read_csv('dwellings_ml.csv')
+
+# Prepare data
+living_area_before = data[data['before1980'] == 1]['livearea']
+living_area_after = data[data['before1980'] == 0]['livearea']
+
+# Plot Living Area distribution
+plt.boxplot([living_area_before, living_area_after], labels=['Before 1980', 'After 1980'])
+plt.title("Living Area by Year Group")
+plt.ylabel("Living Area")
+plt.show()
+
+```
+
+# This boxplot compares the living area of homes built before and after 1980, showing similar distributions with occasional outliers for both groups. Machine Learning: While living area shows overlap between the two groups, the presence of outliers suggests that exceptionally large or small homes might provide distinguishing features. However, the median values are close, so this variable alone may not be highly predictive.
+
+# |Task 1_part 3
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the dataset
+data = pd.read_csv('dwellings_ml.csv')
+
+# Calculate proportions of garage types for Before 1980 and After 1980
+garage_cols = [col for col in data.columns if 'gartype' in col]
+garage_data = data[garage_cols + ['before1980']]
+
+# Average values for garage types
+garage_before = garage_data[garage_data['before1980'] == 1][garage_cols].mean()
+garage_after = garage_data[garage_data['before1980'] == 0][garage_cols].mean()
+
+# Plot proportions as grouped bars
+x = range(len(garage_cols))
+width = 0.35
+
+plt.bar(x, garage_before, width, label='Before 1980', color='orange')
+plt.bar([i + width for i in x], garage_after, width, label='After 1980', color='lightblue')
+
+# Add labels and legend
+plt.xticks([i + width/2 for i in x], garage_cols, rotation=45, ha='right')
+plt.title("Garage Type Proportions by Year Group")
+plt.ylabel("Proportion")
+plt.xlabel("Garage Type")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+```
+
+# This bar chart shows that homes built before 1980 were more likely to have detached garages or no garages, while homes built after 1980 commonly feature attached garages. Machine Learning: Garage type (gartype_*) shows a clear pattern that correlates with the build period. These distinctions make garage type a strong predictor for classification. For example, homes with attached garages are likely to be built post-1980, providing valuable information for the model.
+
+# |Task 2
+```{python}
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+
+# Load the dataset
+data = pd.read_csv('dwellings_ml.csv')
+
+# Define features and target
+X = data.drop(columns=['before1980', 'parcel', 'yrbuilt'])
+y = data['before1980']
+
+# Split into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train Random Forest model
+rf_model = RandomForestClassifier(random_state=42, n_estimators=100, max_depth=10)
+rf_model.fit(X_train, y_train)
+
+# Predict on test set
+y_pred = rf_model.predict(X_test)
+
+# Evaluate model
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+print(classification_report(y_test, y_pred))
+
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+plt.matshow(conf_matrix, cmap='coolwarm')
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.colorbar()
+plt.xticks([0, 1], ['After 1980', 'Before 1980'])
+plt.yticks([0, 1], ['After 1980', 'Before 1980'])
+plt.show()
+
+```
+
+# The classification model achieves an accuracy of 90.8%, with higher precision and recall for homes built before 1980, indicating strong performance in identifying older homes with potential asbestos risks.Precision for Pre-1980 (Class 1): High precision (92%) means that when the model predicts a home is pre-1980, it is likely correct. Recall for Pre-1980: High recall (93%) means the model captures most homes built before 1980. This is critical for the client because identifying homes with potential asbestos risks is a priority.Reasoning: The high precision and recall for homes built before 1980 align with the client's goal of identifying older homes potentially at risk of containing asbestos. The model slightly underperforms on homes built after 1980, which is acceptable as the focus is on pre-1980 homes.
+
+# |Task 3
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+# Load the dataset
+data = pd.read_csv('dwellings_ml.csv')
+
+# Define features and target
+X = data.drop(columns=['before1980', 'parcel', 'yrbuilt'])
+y = data['before1980']
+
+# Train model
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+rf_model = RandomForestClassifier(random_state=42, n_estimators=100, max_depth=10)
+rf_model.fit(X_train, y_train)
+
+# Plot feature importance
+importances = rf_model.feature_importances_
+feature_names = X.columns
+importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances}).sort_values(by='Importance', ascending=False)
+
+# Plot Top 10 Features
+plt.barh(importance_df['Feature'][:10], importance_df['Importance'][:10], color='lightblue')
+plt.title("Top 10 Feature Importances")
+plt.xlabel("Importance")
+plt.ylabel("Feature")
+plt.gca().invert_yaxis()
+plt.show()
+
+```
+
+#  The feature importance chart highlights arcstyle_ONE-STORY and stories as the most influential factors in determining whether a house was built before 1980, followed by garage type (gartype_Att) and the number of bathrooms. Why Accuracy is Not Enough: While accuracy is high (90.8%), it does not account for class imbalances. In this dataset, there are more pre-1980 homes, making metrics like precision and recall critical to ensure the model performs well on both classes. Precision and Recall for Pre-1980 Homes: High precision and recall indicate the model is reliable for identifying older homes, addressing the client’s need to prioritize health and safety risks associated with asbestos.Reasoning: The combination of metrics demonstrates that the model is both accurate and effective at focusing on pre-1980 homes, which are the primary concern for the client. The confusion matrix reinforces this by showing that most misclassifications occur for post-1980 homes, which is less critical.
+
+# Final Model Choice: The Random Forest model was selected for its ability to handle non-linear relationships and capture interactions between features. It achieved high accuracy without extensive parameter tuning.

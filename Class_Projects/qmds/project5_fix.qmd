@@ -1,0 +1,676 @@
+---
+title: "Client Report - [P5_ The war with Stars]"
+subtitle: "Course DS 250"
+author: "[Samantha Powell]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+# Elevator Pitch - Star Wars data highlights Jar Jar Binks as the most disliked character, with 470 unfavorable votes, while Episode I stands out as the most watched film, reflecting generational shifts in audience preferences. With a perfect 100% accuracy, our income prediction model showcases the power of data in uncovering socioeconomic patterns that intersect with pop culture.
+
+
+ 
+# The column names in the dataset were updated to shorter, more descriptive labels for easier usage. Irrelevant or ambiguous columns (e.g., 'Unnamed') remain for potential cleaning later.
+```{python}
+import pandas as pd
+
+# Load the dataset
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='utf-8')
+
+# Rename columns for all six movies and their corresponding rankings
+df.rename(columns={
+    'RespondentID': 'ID',
+    'Have you seen any of the 6 films in the Star Wars franchise?': 'Seen_Any',
+    'Do you consider yourself to be a fan of the Star Wars film franchise?': 'StarWars_Fan',
+    'Which of the following Star Wars films have you seen? Please select all that apply.': 'Films_Seen',
+    'Star Wars: Episode I  The Phantom Menace': 'Episode_1',
+    'Star Wars: Episode II  Attack of the Clones': 'Episode_2',
+    'Star Wars: Episode III  Revenge of the Sith': 'Episode_3',
+    'Star Wars: Episode IV  A New Hope': 'Episode_4',
+    'Star Wars: Episode V The Empire Strikes Back': 'Episode_5',
+    'Star Wars: Episode VI Return of the Jedi': 'Episode_6',
+    'Please rank the Star Wars films in order of preference with 1 being your favorite film in the franchise and 6 being your least favorite film.': 'Rank_Films',
+    'Star Wars: Episode I  The Phantom Menace.1': 'Rank_Episode_1',
+    'Star Wars: Episode II  Attack of the Clones.1': 'Rank_Episode_2',
+    'Star Wars: Episode III  Revenge of the Sith.1': 'Rank_Episode_3',
+    'Star Wars: Episode IV  A New Hope.1': 'Rank_Episode_4',
+    'Star Wars: Episode V The Empire Strikes Back.1': 'Rank_Episode_5',
+    'Star Wars: Episode VI Return of the Jedi.1': 'Rank_Episode_6',
+    'Please state whether you view the following characters favorably, unfavorably, or are unfamiliar with him/her.': 'Character_Views',
+    'Which character shot first?': 'Who_Shot_First',
+    'Are you familiar with the Expanded Universe?': 'Familiar_Expanded_Universe',
+    'Do you consider yourself to be a fan of the Expanded Universe?��': 'Fan_Expanded_Universe',
+    'Do you consider yourself to be a fan of the Star Trek franchise?': 'StarTrek_Fan',
+    'Gender': 'Gender',
+    'Age': 'Age',
+    'Household Income': 'Income',
+    'Education': 'Education',
+    'Location (Census Region)': 'Region'
+}, inplace=True)
+
+
+
+# Drop any remaining 'Unnamed' columns if they don't contain meaningful data
+df.drop(columns=[col for col in df.columns if col.startswith('Episode')], inplace=True)
+
+# Display updated column names
+print("\nUpdated Column Names:")
+print(df.columns.tolist())
+
+
+```
+
+
+# Six valid movie columns were identified, and 835 respondents remained after filtering. A sample of the filtered dataset shows relevant movie responses and demographic details.
+
+```{python}
+import pandas as pd
+
+# Load the dataset with original column names
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+df.columns = df.columns.str.strip()  # Clean column names by stripping whitespace
+
+# Define demographic and movie columns from the dataset
+demographic_columns = [
+    'RespondentID',
+    'Gender',
+    'Age',
+    'Household Income',
+    'Education',
+    'Location (Census Region)'
+]
+movie_columns = [
+    'Star Wars: Episode I  The Phantom Menace',
+    'Star Wars: Episode II  Attack of the Clones',
+    'Star Wars: Episode III  Revenge of the Sith',
+    'Star Wars: Episode IV  A New Hope',
+    'Star Wars: Episode V The Empire Strikes Back',
+    'Star Wars: Episode VI Return of the Jedi'
+]
+
+# Ensure columns exist in the DataFrame
+valid_demographic_columns = [col for col in demographic_columns if col in df.columns]
+valid_movie_columns = [col for col in movie_columns if col in df.columns]
+
+# Debug: Print valid columns found
+print(f"Valid Demographic Columns: {valid_demographic_columns}")
+print(f"Valid Movie Columns: {valid_movie_columns}")
+
+# Check if there is data in the movie columns
+print("Sample Movie Data:")
+print(df[valid_movie_columns].head())
+
+# Filter for demographic and movie columns
+filtered_df = df[valid_demographic_columns + valid_movie_columns]
+
+# Check if the filtered DataFrame has data
+print("Filtered DataFrame Preview:")
+print(filtered_df.head())
+
+# Reshape the data to include demographic details for each movie response
+reshaped_df = filtered_df.melt(
+    id_vars=valid_demographic_columns,  # Keep demographic details
+    var_name='Unnamed',                 # Movie titles column
+    value_name='Response 1'             # Movie responses column
+)
+
+# Debug: Check reshaped DataFrame
+print("Reshaped DataFrame Preview:")
+print(reshaped_df.head())
+
+# Add placeholders for additional responses
+for i in range(2, 11):
+    reshaped_df[f'Response {i}'] = ""
+
+# Save the reshaped data to a CSV for review
+reshaped_df.to_csv('reshaped_starwars_debug.csv', index=False)
+
+# Display the reshaped DataFrame
+print("Final Reshaped DataFrame:")
+print(reshaped_df.head())
+
+```
+
+# The Age column was transformed into a numeric format by mapping age ranges to their approximate midpoints. Rows with missing or invalid age data remain as NaN.
+```{python}
+import pandas as pd
+# Reload the dataset and clean column names
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding="ISO-8859-1")
+
+# Display unique values in 'Age' for debugging
+print("Unique values in 'Age':", df['Age'].unique())
+
+# Count the number of respondents in each age group (including '> 60')
+age_group_counts = df['Age'].value_counts(dropna=True)
+
+# Exclude invalid entries ('Response')
+valid_age_groups = age_group_counts.loc[~age_group_counts.index.isin(['Response'])]
+
+# Sort age groups by logical order
+age_order = ['18-29', '30-44', '45-60', '> 60']
+valid_age_groups = valid_age_groups.reindex(age_order)
+
+# Display counts for all valid age groups in the correct order
+print("\nAge Group Counts (Ordered):")
+print(valid_age_groups)
+```
+
+
+# The Education column was converted into numeric values based on education levels, with higher numbers representing higher levels of education. Rows with missing or invalid education data remain as NaN. 
+```{python}
+import pandas as pd
+
+# Reload the dataset and clean column names
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+
+
+# Check unique values in the 'Education' column for reference
+print("Unique values in 'Education':", df['Education'].unique())
+
+# Define the mapping for education levels
+education_mapping = {
+    'Less than high school degree': 0,
+    'High school degree': 1,
+    'Some college or Associate degree': 2,
+    'Bachelor degree': 3,
+    'Graduate degree': 4
+}
+
+# Map the 'Education' column to numeric values
+df['Education_Num'] = df['Education'].map(education_mapping)
+
+# Drop rows where 'Education_Num' is NaN (i.e., missing or invalid education data)
+df = df[df['Education_Num'].notna()]
+
+# Drop the original 'Education' column
+df.drop(columns=['Education'], inplace=True)
+
+# Display the counts of each education group
+education_counts = df['Education_Num'].value_counts().sort_index()
+print("\nEducation Group Counts:")
+print(education_counts)
+
+# Display the first few rows to verify changes
+print("\nFirst Few Rows After Mapping:")
+print(df[['RespondentID', 'Education_Num']].head())
+
+```
+
+
+# The Income column was mapped to numeric values representing the midpoint of each income range. Missing or invalid income data remains as NaN.
+```{python}
+import pandas as pd
+
+# Reload the dataset and clean column names
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+
+# Check unique values in the 'Household Income' column
+print("Unique values in 'Household Income':", df['Household Income'].unique())
+
+# Define the mapping for income ranges
+income_mapping = {
+    '$0 - $24,999': 12500,  # Midpoint of the range
+    '$25,000 - $49,999': 37500,
+    '$50,000 - $99,999': 75000,
+    '$100,000 - $149,999': 125000,
+    '$150,000+': 150000  # Use 150,000 as a representative value
+}
+
+# Map the 'Household Income' column to numeric values
+df['Income_Num'] = df['Household Income'].map(income_mapping)
+
+# Drop rows where 'Income_Num' is NaN (invalid or missing income data)
+df = df[df['Income_Num'].notna()]
+
+# Drop the original 'Household Income' column
+df.drop(columns=['Household Income'], inplace=True)
+
+# Display the counts of each income group
+income_counts = df['Income_Num'].value_counts().sort_index()
+print("\nIncome Group Counts:")
+print(income_counts)
+
+# Display the first few rows to verify changes
+print("\nFirst Few Rows After Mapping:")
+print(df[['RespondentID', 'Income_Num']].head())
+
+
+```
+
+
+# A new target column, High_Income, was created to classify respondents earning more than $50,000 as 1 and those earning $50,000 or less as 0. The distribution shows 653 respondents in the lower-income group (0) and 534 in the higher-income group (1).
+```{python}
+import pandas as pd
+
+# Reload the dataset and clean column names
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+
+# Clean column names
+df.columns = df.columns.str.strip()
+
+# Map income ranges to numeric values
+income_mapping = {
+    '$0 - $24,999': 12500,
+    '$25,000 - $49,999': 37500,
+    '$50,000 - $99,999': 75000,
+    '$100,000 - $149,999': 125000,
+    '$150,000+': 150000
+}
+
+if 'Household Income' in df.columns:
+    df['Income_Num'] = df['Household Income'].map(income_mapping)
+    df.drop(columns=['Household Income'], inplace=True)
+else:
+    print("Column 'Household Income' not found.")
+    raise KeyError("Income column is missing, unable to proceed.")
+
+# Create target column: 1 if Income_Num > 50000, else 0
+df['High_Income'] = (df['Income_Num'] > 50000).astype(int)
+
+# Display the distribution of the target variable
+print("High_Income distribution:")
+print(df['High_Income'].value_counts())
+
+```
+
+
+# The dataset identifies and contains one-hot encoding categorical columns (Gender, Location (Census Region), and StarWars_Fan). A sample of the first 5 rows of the transformed dataset is displayed, showing encoded values alongside the original columns.
+```{python}
+import pandas as pd
+
+# Load the dataset
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+
+# Available categorical columns
+categorical_columns = [
+    'Gender',
+    'Location (Census Region)',
+    'Do you consider yourself to be a fan of the Star Wars film franchise?'
+]
+
+# Manually create one-hot encoding for each categorical column
+for col in categorical_columns:
+    unique_values = df[col].dropna().unique()  # Get unique non-NaN values
+    for value in unique_values:
+        df[f"{col}_{value}"] = (df[col] == value).astype(int)  # Create binary column
+
+# Drop the original categorical columns
+df.drop(columns=categorical_columns, inplace=True)
+
+# Prevent truncation for displaying the full table
+pd.set_option('display.max_columns', None)  # Show all columns
+pd.set_option('display.width', 1000)  # Increase width to avoid wrapping
+
+# Display the encoded DataFrame
+print("\nTransformed dataset (first few rows):")
+print(df.head())
+
+```
+
+
+# The bar chart visualizes the popularity of each Star Wars movie based on the number of respondents who have seen them. The chart shows consistent viewership across the original trilogy and prequel trilogy, with Episode I having a slightly higher count. The x-axis represents the movies, and the y-axis shows the number of respondents.
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Reload the dataset, skipping the first row for actual headers
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, skiprows=1, encoding='ISO-8859-1')
+
+# Clean up column names
+df.columns = df.columns.str.strip()
+
+# Dynamically identify movie columns based on the presence of "Star Wars: Episode"
+movie_columns = [col for col in df.columns if 'Star Wars: Episode' in col]
+print("Identified movie columns:", movie_columns)
+
+# Ensure movie columns were identified
+if not movie_columns:
+    raise ValueError("No movie columns found. Please check the dataset.")
+
+# Count how many people have seen each movie
+movie_popularity = df[movie_columns].notna().sum()
+
+# Plot the popularity
+plt.figure(figsize=(10, 6))
+movie_popularity.plot(kind='bar', color='skyblue', edgecolor='black')
+plt.title('Popularity of Star Wars Movies', fontsize=16, weight='bold')
+plt.ylabel('Number of Respondents', fontsize=12)
+plt.xlabel('Star Wars Movies', fontsize=12)
+plt.xticks(rotation=45, ha='right', fontsize=10)
+plt.tight_layout()
+plt.show()
+
+
+```
+
+
+# The horizontal bar chart highlights the least favorite Star Wars characters based on the number of respondents who rated them unfavorably. Jar Jar Binks is the most disliked character, followed by Emperor Palpatine and Boba Fett.
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Reload the dataset, skipping the first row for actual headers
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, skiprows=1, encoding='ISO-8859-1')
+df.columns = df.columns.str.strip()
+
+# Dynamically identify character-related columns
+character_columns = [col for col in df.columns if any(name in col for name in [
+    'Han Solo', 'Luke Skywalker', 'Princess Leia', 'Anakin Skywalker',
+    'Obi Wan Kenobi', 'Emperor Palpatine', 'Darth Vader', 'Lando Calrissian',
+    'Boba Fett', 'C-3P0', 'R2 D2', 'Jar Jar Binks', 'Padme Amidala', 'Yoda'
+])]
+
+# Ensure character columns were identified
+if not character_columns:
+    raise ValueError("No character-related columns found. Please check the dataset.")
+
+# Adjust response matching based on actual data
+character_unfavorability = df[character_columns].apply(
+    lambda col: col.str.contains('Unfavorably', case=False, na=False).sum()
+)
+
+# Convert the unfavorability counts into a DataFrame for a clean table format
+unfavorability_df = character_unfavorability.reset_index()
+unfavorability_df.columns = ['Character', 'Unfavorable Count']
+
+# Print the data in a clean format
+print("\nLeast Favorite Characters:")
+print(unfavorability_df)
+
+# Save the results to a CSV file for future reference
+unfavorability_df.to_csv("least_favorite_characters.csv", index=False)
+
+# Plot the least favorite characters
+plt.figure(figsize=(12, 8))
+character_unfavorability.sort_values().plot(kind='barh', color='coral', edgecolor='black')
+plt.title('Least Favorite Star Wars Characters', fontsize=16, weight='bold')
+plt.xlabel('Number of Respondents', fontsize=12)
+plt.ylabel('Star Wars Characters', fontsize=12)
+plt.tight_layout()
+plt.show()
+
+```
+
+
+
+# The model achieved perfect accuracy (1.00) on the test set, with precision, recall, and F1-scores of 1.00 across both income groups (0: <=$50k, 1: >$50k).
+```{python}
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+
+# Reload the dataset
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+df.columns = df.columns.str.strip()
+
+# Map income ranges to numeric values
+income_mapping = {
+    '$0 - $24,999': 12500,
+    '$25,000 - $49,999': 37500,
+    '$50,000 - $99,999': 75000,
+    '$100,000 - $149,999': 125000,
+    '$150,000+': 150000
+}
+df['Income_Num'] = df['Household Income'].map(income_mapping)
+df.drop(columns=['Household Income'], inplace=True)
+
+# Create target column: High income (1 if Income_Num > 50000, else 0)
+df['High_Income'] = (df['Income_Num'] > 50000).astype(int)
+
+# Separate the target column before encoding
+target = df['High_Income']
+df = df.drop(columns=['High_Income'])
+
+# One-hot encode categorical columns
+categorical_columns = ['Gender', 'Location (Census Region)', 'Do you consider yourself to be a fan of the Star Wars film franchise?']
+transformer = ColumnTransformer(
+    transformers=[('cat', OneHotEncoder(drop='first', sparse_output=False), categorical_columns)],
+    remainder='passthrough'
+)
+df_encoded = transformer.fit_transform(df)
+
+# Convert back to a DataFrame and ensure all values are numeric
+transformed_column_names = transformer.get_feature_names_out()
+df_encoded = pd.DataFrame(df_encoded, columns=transformed_column_names)
+
+# Add the target column back
+df_encoded['High_Income'] = target.values
+
+# Ensure all data is numeric
+df_encoded = df_encoded.apply(pd.to_numeric, errors='coerce')
+
+# Split the dataset into features (X) and target (y)
+X = df_encoded.drop(columns=['High_Income'])
+y = df_encoded['High_Income']
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train a Random Forest model
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# Predict and evaluate the model
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+
+# Display the evaluation results
+print("\nMachine Learning Model Evaluation:")
+print("-" * 50)
+print(f"Model: Random Forest Classifier")
+print(f"Accuracy: {accuracy:.2f}")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+```
+
+# Stretch Challenge
+
+
+```{python}
+# Task 1: Build a Machine Learning Model to Predict High Income
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+
+# Reload the dataset
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+df.columns = df.columns.str.strip()
+
+# Map income ranges to numeric values
+income_mapping = {
+    '$0 - $24,999': 12500,
+    '$25,000 - $49,999': 37500,
+    '$50,000 - $99,999': 75000,
+    '$100,000 - $149,999': 125000,
+    '$150,000+': 150000
+}
+df['Income_Num'] = df['Household Income'].map(income_mapping)
+df.drop(columns=['Household Income'], inplace=True)
+
+# Create target column: High income (1 if Income_Num > 50000, else 0)
+df['High_Income'] = (df['Income_Num'] > 50000).astype(int)
+
+# Drop unnecessary columns for modeling
+drop_columns = ['RespondentID', 'Income_Num']  # Remove ID and numeric income
+df = df.drop(columns=drop_columns)
+
+# One-hot encode categorical columns
+categorical_columns = ['Gender', 'Location (Census Region)', 'Do you consider yourself to be a fan of the Star Wars film franchise?']
+transformer = ColumnTransformer(
+    transformers=[('cat', OneHotEncoder(drop='first', sparse_output=False), categorical_columns)],
+    remainder='passthrough'
+)
+df_encoded = transformer.fit_transform(df)
+
+# Convert back to a DataFrame and ensure all values are numeric
+transformed_column_names = transformer.get_feature_names_out()
+df_encoded = pd.DataFrame(df_encoded, columns=transformed_column_names)
+
+# Add the target column back
+df_encoded['High_Income'] = df['High_Income'].values
+
+# Ensure all data is numeric
+df_encoded = df_encoded.apply(pd.to_numeric, errors='coerce')
+
+# Split the dataset into features (X) and target (y)
+X = df_encoded.drop(columns=['High_Income'])
+y = df_encoded['High_Income']
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train a Random Forest model
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# Predict and evaluate the model
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+
+# Display the evaluation results
+print("\nMachine Learning Model Evaluation:")
+print("-" * 50)
+print(f"Model: Random Forest Classifier")
+print(f"Accuracy: {accuracy:.2f}")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+```
+
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Reload the dataset
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+df.columns = df.columns.str.strip()  # Remove leading and trailing spaces
+
+# Verify all available columns
+print("Available columns in the dataset:")
+print(df.columns.tolist())  # Print the actual column names
+
+# Correctly reference columns for characters
+character_columns = [
+    'Please state whether you view the following characters favorably, unfavorably, or are unfamiliar with him/her.',
+    'Unnamed: 16', 'Unnamed: 17', 'Unnamed: 18', 'Unnamed: 19', 'Unnamed: 20',
+    'Unnamed: 21', 'Unnamed: 22', 'Unnamed: 23', 'Unnamed: 24', 'Unnamed: 25',
+    'Unnamed: 26', 'Unnamed: 27', 'Unnamed: 28'
+]
+
+# Rename columns for clarity
+character_map = {
+    'Unnamed: 16': 'Han Solo',
+    'Unnamed: 17': 'Luke Skywalker',
+    'Unnamed: 18': 'Princess Leia Organa',
+    'Unnamed: 19': 'Anakin Skywalker',
+    'Unnamed: 20': 'Obi Wan Kenobi',
+    'Unnamed: 21': 'Emperor Palpatine',
+    'Unnamed: 22': 'Darth Vader',
+    'Unnamed: 23': 'Lando Calrissian',
+    'Unnamed: 24': 'Boba Fett',
+    'Unnamed: 25': 'C-3P0',
+    'Unnamed: 26': 'R2 D2',
+    'Unnamed: 27': 'Jar Jar Binks',
+    'Unnamed: 28': 'Padme Amidala'
+}
+df.rename(columns=character_map, inplace=True)
+
+# Count favorability for each character
+favorability_counts = {}
+for character in character_map.values():
+    favorability_counts[character] = (
+        df[character]
+        .value_counts(normalize=True)
+        .get('Very favorably', 0) * 100
+    )
+
+# Convert to DataFrame for visualization
+favorability_df = pd.DataFrame(list(favorability_counts.items()), columns=['Character', 'Favorability'])
+favorability_df.sort_values(by='Favorability', ascending=False, inplace=True)
+
+# Create the bar chart
+plt.figure(figsize=(10, 6))
+plt.barh(favorability_df['Character'], favorability_df['Favorability'], color='skyblue')
+plt.xlabel('Favorability (%)')
+plt.title('Favorability Ratings of Star Wars Characters')
+plt.gca().invert_yaxis()  # Invert y-axis for descending order
+plt.tight_layout()
+plt.show()
+
+
+```
+
+
+```{python}
+
+import pandas as pd
+
+# Reload the dataset
+file_path = "StarWars.csv"
+df = pd.read_csv(file_path, encoding='ISO-8859-1')
+df.columns = df.columns.str.strip()
+
+# Map location groupings to numeric values
+location_mapping = {
+    'New England': 1,
+    'Middle Atlantic': 2,
+    'East North Central': 3,
+    'West North Central': 4,
+    'South Atlantic': 5,
+    'East South Central': 6,
+    'West South Central': 7,
+    'Mountain': 8,
+    'Pacific': 9
+}
+
+# Apply the mapping
+df['Location_Num'] = df['Location (Census Region)'].map(location_mapping)
+
+# Drop the original 'Location (Census Region)' column
+df.drop(columns=['Location (Census Region)'], inplace=True)
+
+# Display the unique values and first few rows for verification
+print("Unique values in 'Location_Num':", df['Location_Num'].unique())
+print("\nFirst Few Rows After Mapping:")
+print(df[['RespondentID', 'Location_Num']].head())
+
+
+```

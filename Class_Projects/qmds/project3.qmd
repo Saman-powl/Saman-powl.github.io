@@ -1,0 +1,251 @@
+---
+title: "Client Report - [Project 3: Finding Relationships in Baseball]"
+subtitle: "Course DS 250"
+author: "[Samantha Powell]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+## Elevator pitch: The analysis reveals striking contrasts in Major League Baseball, where top players command salaries up to $33 million, while average career lengths hover around just 4.83 years. Yet, some legends, like Nick Altrock and Jim O'Rourke, defied the odds with careers spanning over 30 years, underscoring the rare endurance required to maintain longevity in the sport. This blend of high financial rewards and challenging career sustainability highlights the exceptional dynamics within professional baseball.
+
+
+```{python}
+#| label: libraries
+#| include: false
+import sqlite3
+import pandas as pd
+import numpy as np
+from lets_plot import *
+LetsPlot.setup_html(isolated_frame=True)
+
+LetsPlot.setup_html()
+#| label: project-data
+#| code-summary: Read and format project data
+
+# Learn morea about Code Cells: https://quarto.org/docs/reference/cells/cells-jupyter.html
+
+# Include and execute your code here
+df = pd.read_csv("https://raw.githubusercontent.com/byuidatascience/data4python4ds/master/data-raw/mpg/mpg.csv")
+```
+
+
+## |Task 1
+
+```{python}
+import sqlite3
+import pandas as pd
+
+# Connect to SQLite database
+con = sqlite3.connect('lahmansbaseballdb.sqlite')
+df_q1 = pd.read_sql_query(
+    """
+    SELECT playerID, yearID, teamID, salary
+    FROM salaries
+    ORDER BY salary DESC
+    LIMIT 5;
+    """, con)
+con.close()
+
+# Generate only the <td> sections for the data
+html_q1 = "\n".join(
+    df_q1.apply(lambda row: f"<td>{row.playerID}</td><td>{row.yearID}</td><td>{row.teamID}</td><td>{row.salary}</td>", axis=1)
+)
+
+# Print the simplified HTML
+print("HTML Table for Question 1:")
+print(html_q1)
+
+```
+
+# The data shows a significant salary disparity in baseball, with top players like Alex Rodriguez and Clayton Kershaw earning up to $33 million, while lower-tier players earn as little as $10,900, with high-paying teams like the New York Yankees and Los Angeles Dodgers frequently represented at the top.
+
+## |Task 2 
+
+```{python}
+import sqlite3
+import pandas as pd
+
+# Connect to the SQLite database
+con = sqlite3.connect('lahmansbaseballdb.sqlite')
+
+# Query for Part 1: Top 5 Batting Averages (Min 1 At-Bat Per Year)
+df_q2_part1 = pd.read_sql_query(
+    """
+    SELECT playerID, yearID, CAST(H AS FLOAT) / AB AS batting_avg
+    FROM batting
+    WHERE AB >= 1
+    ORDER BY batting_avg DESC, playerID
+    LIMIT 5;
+    """, con)
+
+# Generate only <td> rows for Part 1
+html_q2_part1 = "\n".join(
+    df_q2_part1.apply(lambda row: f"<td>{row.playerID}</td><td>{row.yearID}</td><td>{row.batting_avg}</td>", axis=1)
+)
+
+# Query for Part 2: Top 5 Batting Averages (Min 10 At-Bats Per Year)
+df_q2_part2 = pd.read_sql_query(
+    """
+    SELECT playerID, yearID, CAST(H AS FLOAT) / AB AS batting_avg
+    FROM batting
+    WHERE AB >= 10
+    ORDER BY batting_avg DESC, playerID
+    LIMIT 5;
+    """, con)
+
+# Generate only <td> rows for Part 2
+html_q2_part2 = "\n".join(
+    df_q2_part2.apply(lambda row: f"<td>{row.playerID}</td><td>{row.yearID}</td><td>{row.batting_avg}</td>", axis=1)
+)
+
+# Query for Part 3: Top 5 Career Batting Averages (Min 100 At-Bats)
+df_q2_part3 = pd.read_sql_query(
+    """
+    SELECT playerID, SUM(H) * 1.0 / SUM(AB) AS career_batting_avg
+    FROM batting
+    GROUP BY playerID
+    HAVING SUM(AB) >= 100
+    ORDER BY career_batting_avg DESC
+    LIMIT 5;
+    """, con)
+
+# Generate only <td> rows for Part 3
+html_q2_part3 = "\n".join(
+    df_q2_part3.apply(lambda row: f"<td>{row.playerID}</td><td>{row.career_batting_avg}</td>", axis=1)
+)
+
+# Close the database connection
+con.close()
+
+# Combine all HTML sections
+combined_html_q2 = f"""
+<h3>Question 2 Results</h3>
+
+<h4>Part 1: Top 5 Batting Averages (Min 1 At-Bat Per Year)</h4>
+{html_q2_part1}
+
+<h4>Part 2: Top 5 Batting Averages (Min 10 At-Bats Per Year)</h4>
+{html_q2_part2}
+
+<h4>Part 3: Top 5 Career Batting Averages (Min 100 At-Bats)</h4>
+{html_q2_part3}
+"""
+
+# Print the combined HTML
+print("Combined HTML Table for Question 2:")
+print(combined_html_q2)
+
+```
+
+# A. The top 5 players with at least one at-bat per year each achieved a perfect batting average of 1.0, likely due to a small sample of at-bats. 
+# B. The top 5 players with at least 10 at-bats per year achieved high batting averages, led by nymanny01 in 1974 with an average of 0.643, indicating exceptional hitting performances within a limited sample size. 
+# C. The top 5 players with at least 100 career at-bats achieved impressive career batting averages, led by cobbty01 with a 0.366 average, highlighting consistent high-level performance over extended playing time.
+
+## |Task 3
+
+```{python}
+import sqlite3
+import pandas as pd
+
+con = sqlite3.connect('lahmansbaseballdb.sqlite')
+df_q3 = pd.read_sql_query(
+    """
+    SELECT teamID, AVG(salary) AS avg_salary
+    FROM salaries
+    WHERE teamID IN ('NYA', 'BOS')
+    GROUP BY teamID
+    ORDER BY avg_salary DESC;
+    """, con)
+con.close()
+
+# Generate only the <td> sections for the data
+html_q3 = "\n".join(
+    df_q3.apply(lambda row: f"<td>{row.teamID}</td><td>{row.avg_salary}</td>", axis=1)
+)
+
+# Print the simplified HTML
+print("HTML Table for Question 3:")
+print(html_q3)
+
+```
+
+# The New York Yankees (NYA) have a higher average salary of $3.97 million compared to the Boston Red Sox (BOS) at $2.97 million, indicating a greater investment in player salaries by the Yankees.
+
+# Stretch Challenge
+
+```{python}
+import sqlite3
+import pandas as pd
+
+# Connect to the SQLite database
+con = sqlite3.connect('lahmansbaseballdb.sqlite')
+
+# Part 1: Calculate Average Career Length for Players Who Played at Least One Game
+df_career_avg = pd.read_sql_query(
+    """
+    SELECT AVG(julianday(finalGame) - julianday(debut)) / 365.25 AS avg_career_length
+    FROM people
+    WHERE finalGame IS NOT NULL AND debut IS NOT NULL;
+    """, con)
+
+# Generate <td> for the average career length
+html_career_avg = f"<td>Average Career Length: {df_career_avg.iloc[0, 0]:.2f} years</td>"
+
+# Part 2: Top 10 Players with Longest Careers
+df_top10_careers = pd.read_sql_query(
+    """
+    SELECT playerID, nameFirst, nameLast,
+           (julianday(finalGame) - julianday(debut)) / 365.25 AS career_length
+    FROM people
+    WHERE finalGame IS NOT NULL AND debut IS NOT NULL
+    ORDER BY career_length DESC
+    LIMIT 10;
+    """, con)
+
+# Generate only <td> rows for the top 10 longest careers
+html_top10_careers = "\n".join(
+    df_top10_careers.apply(
+        lambda row: f"<td>{row.playerID}</td><td>{row.nameFirst}</td><td>{row.nameLast}</td><td>{row.career_length:.2f}</td>",
+        axis=1
+    )
+)
+
+# Close the database connection
+con.close()
+
+# Combine results into a single HTML string
+combined_html_stretch = f"""
+<h3>Stretch Challenge Results</h3>
+
+<h4>Average Career Length (Players with At Least One Game)</h4>
+{html_career_avg}
+
+<h4>Top 10 Players with Longest Careers</h4>
+{html_top10_careers}
+"""
+
+# Print the combined HTML
+print("Combined HTML Table for Stretch Challenge:")
+print(combined_html_stretch)
+
+```
+
+#  The average career length for players with at least one game is 4.83 years, with the longest careers led by Nick Altrock at 35.21 years, followed by Jim O'Rourke and Minnie Minoso, each exceeding 30 years.
