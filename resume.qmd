@@ -13,6 +13,11 @@ Phone: 713-775-6080
 
 ## Education
 
+**Dulles High School**  
+*Houston, TX*  
+**High School Diploma**  
+_June 2020_
+
 **Brigham Young University - Idaho**  
 *Rexburg, ID*  
 **Business Analytics**  
@@ -39,12 +44,6 @@ Learned data storage, retrieval, and analysis techniques to support business dec
 **DS 250-Data Science Programming**  
 September 2024 - December 2024
 Learned to write programs for data retrieval, preparation, and analysis using data science libraries. Applied machine learning techniques to make predictions and created visualizations for insights.				
-
-
-**Dulles High School**  
-*Houston, TX*  
-**High School Diploma**  
-_June 2020_
 
 ---
 ## Work Experience
