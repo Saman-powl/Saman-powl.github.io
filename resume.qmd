@@ -6,7 +6,7 @@ title: "Samantha Powell's Resume"
 # Samantha Powell
 Business Analytics Student
 
-<div id="webaddress">
+<div id="https://github.com/Saman-powl/Saman-powl.github.io">
 <a href="mailto:skpowell38@gmail.com">skpowell38@gmail.com</a>  
 Phone: 713-775-6080
 </div>
